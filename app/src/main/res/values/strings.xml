@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">HznLock</string>
+
+    <string name="accessibility_description">
+        O HznLock precisa desta permissão para monitorar e bloquear o acesso a conteúdos impróprios e para proteger o aplicativo contra desinstalação ou desativação.
+    </string>
+
+    <string name="notification_channel_name">Serviço de Bloqueio HznLock</string>
+
+</resources>

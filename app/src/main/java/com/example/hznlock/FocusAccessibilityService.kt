@@ -14,9 +14,11 @@ import android.os.Build
 import android.view.Surface
 import android.view.WindowManager
 import android.os.Handler
+import android.util.Log
 import android.view.Display
 import android.view.Gravity
 import android.view.View
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 
 @SuppressLint("AccessibilityPolicy")
@@ -93,20 +95,63 @@ class FocusAccessibilityService : AccessibilityService() {
             "com.jv.app.manager", "org.servalproject", "com.shelter.main", "com.island.main",
             "com.hry.app_manager", "com.lb.app_manager", "com.github.heroinand.app_manager",
             "io.github.muntashirakon.AppManager", "com.apk.installer.manager", "com.ext.file.manager",
-            "com.android.vending.app.manager"
+            "com.android.vending.app.manager", "com.zacharee1.systemuituner","com.tombayley.statusbar",
+            "com.bryancandi.android.uituner", "com.jamworks.statusbaricons",
+            "com.pranavpandey.notificationtoggle",
+            "com.treydev.pns",
+            "com.james.statusbar",
+            "com.kynguyen.statusbar",
+            "com.google.android.apps.rotationcontrol",
+            "org.crape.rotationcontrol",
+            "jp.snowlife01.android.rotationcontrol",
+            "com.pranavpandey.rotation",
+            "com.bonny.rotation",
+            "com.nll.rotationlock",
+            "org.cwstudio.rotationlockadaptive",
+            "com.halfbrick.screenorientationcontrol",
+            "com.draco.ladb",
+            "com.zacharee1.dpichanger",
+            "com.paget96.netspeedindicator",
+            "com.github.ericytsang.touchdetector",
+            "com.bryancandi.android.uituner",
+            "com.icecoldapps.screendpi",
+            "com.gombosdev.displaychanger",
+            "com.nightlynexus.wmchanger",
+            "com.google.android.apps.rotationcontrol",
+            "org.crape.rotationcontrol",
+            "jp.snowlife01.android.rotationcontrol",
+            "com.pranavpandey.rotation",
+            "com.nll.rotationlock",
+            "org.cwstudio.rotationlockadaptive",
+            "com.zacharee1.systemuituner",
+            "com.draco.ladb",
+            "com.tombayley.statusbar",
+            "com.jamworks.statusbaricons",
+            "com.kynguyen.statusbar",
+            "com.james.statusbar",
+            "com.pranavpandey.notificationtoggle",
+            "com.paget96.netspeedindicator",
+            "com.icecoldapps.screendpi",
+            "com.bryancandi.android.uituner",
+            "com.zacharee1.dpichanger",
+            "com.gombosdev.displaychanger",
+            "com.nightlynexus.wmchanger",
         )
 
-        private val BYPASS_PLAY_STORE = hashSetOf("vpn","dns","proxy","túnel","virtual","private","privado","anonymous","anonimo","clone","parallel","multiple", "browser","navegador","web","explorer")
-        private val BYPASS_KEYWORDS = hashSetOf("clone app", "clonador","android virtual", "multi account","parallel space", "dual space", "apk editor", "mt manager","tunnel","vmos", "vpn bypass", "tirar dns","t.me","nextdns","intra","warp", "cloudflare","como burlar", "proxydroid", "lucky patcher", "hack app", "privacy", "onlyfans","vazadinho","abrir configurações de vpn","private dns bypass", "dns changer", "falha na desinstalação de hznlock.")
-        private val BYPASS_BRAVE = hashSetOf("navegador", "browser","explorer", "clone","virtual", "dns", "cloudflare", "vpn", "dual","internet app", "internet apk","anonymous","anonimo")
+
+        private val BYPASS_PLAY_STORE = hashSetOf("vpn", "dns changer","notification","dpi","rotation","rotação","tela","dns","proxy","túnel","virtual","private","privado","anonymous","anonimo","clone","parallel","multiple", "browser","navegador","web","explorer")
+        private val BYPASS_KEYWORDS = hashSetOf("clone app", "clonador","android virtual", "multi account","parallel space", "dual space", "apk editor", "mt manager","tunnel","vmos", "vpn bypass","t.me","nextdns","intra","warp", "cloudflare","como burlar", "proxydroid", "lucky patcher", "hack app", "privacy", "onlyfans","vazadinho","abrir configurações de vpn", "falha na desinstalação de hznlock.")
+        private val BYPASS_BRAVE = hashSetOf("notification","dns changer","navegador","dpi","rotation","rotação","tela", "browser","explorer", "clone","virtual", "dns", "cloudflare", "vpn", "dual","internet app", "internet apk","anonymous","anonimo")
     }
 
     private lateinit var wm: WindowManager
     private lateinit var dm: DisplayManager
 
+
     // === TOUCH SHIELD DUPLO (SEM DELAY / SEM RECRIAR) ===
     private var portraitShield: View? = null
     private var landscapeShield: View? = null
+
 
     @RequiresApi(Build.VERSION_CODES.R)
     @SuppressLint("ServiceCast")
@@ -129,6 +174,9 @@ class FocusAccessibilityService : AccessibilityService() {
         dm.registerDisplayListener(displayListener, Handler(Looper.getMainLooper()))
     }
 
+
+
+
     private val displayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayChanged(displayId: Int) {
             syncShieldWithRotation() // só troca visibilidade
@@ -145,11 +193,21 @@ class FocusAccessibilityService : AccessibilityService() {
     private fun syncShieldWithRotation() {
         val display = dm.getDisplay(Display.DEFAULT_DISPLAY)
         val rotation = display?.rotation ?: Surface.ROTATION_0
+        val rootWindow = rootInActiveWindow
+        val activePkg = rootWindow?.packageName?.toString()
+
 
         val isLandscape = rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
 
+        if (isLandscape && activePkg == "com.android.systemui") {
+            Toast.makeText(this, "systemui detectado!", Toast.LENGTH_SHORT).show()
+            BlockOverlayService.showOverlay(this, activePkg)
+        }
+
         portraitShield?.visibility = if (isLandscape) View.INVISIBLE else View.VISIBLE
         landscapeShield?.visibility = if (isLandscape) View.VISIBLE else View.INVISIBLE
+
+
     }
 
     // ---------- CRIAÇÃO FIXA (UMA VEZ) ----------
@@ -158,20 +216,20 @@ class FocusAccessibilityService : AccessibilityService() {
         if (portraitShield != null) return
 
         portraitShield = View(this).apply {
-            setBackgroundColor(0x01000000) // debug
+            setBackgroundColor(0x00FFFFFF.toInt())
         }
 
         val params = WindowManager.LayoutParams(
-            89,
-            89,
+            115,
+            115,
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             android.graphics.PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = 930
-            y = 1200
+            x = 920
+            y = 1178
         }
 
         wm.addView(portraitShield, params)
@@ -179,6 +237,7 @@ class FocusAccessibilityService : AccessibilityService() {
 
     private fun createLandscapeShield() {
         if (landscapeShield != null) return
+
 
         landscapeShield = View(this).apply {
             setBackgroundColor(0x01000000) // debug diferente
@@ -218,26 +277,30 @@ class FocusAccessibilityService : AccessibilityService() {
         return false
     }
 
-    fun containsVisibleText(node: AccessibilityNodeInfo?, text: String): Boolean {
-        if (node == null) return false
-        val t = node.text?.toString()?.lowercase() ?: ""
-        val d = node.contentDescription?.toString()?.lowercase() ?: ""
+    fun containsVisibleText(root: AccessibilityNodeInfo?, text: String, depth: Int = 0): Boolean {
+        if (root == null || depth > 80) return false // limite pra não estourar pilha
 
-        if ((t.contains(text) || d.contains(text)) && node.isVisibleToUser) {
-            val r = Rect()
-            node.getBoundsInScreen(r)
-            if (r.width() > 0 && r.height() > 0) return true
+        val nodeText = root.text?.toString()?.lowercase() ?: ""
+        val nodeDesc = root.contentDescription?.toString()?.lowercase() ?: ""
+
+        // Fail-fast: se achou, retorna
+        if ((nodeText.contains(text.lowercase()) || nodeDesc.contains(text.lowercase())) && root.isVisibleToUser) {
+            return true
         }
 
-        for (i in 0 until node.childCount) {
-            if (containsVisibleText(node.getChild(i), text)) return true
+        // Percorre filhos recursivamente
+        for (i in 0 until root.childCount) {
+            val child = root.getChild(i) ?: continue
+            if (containsVisibleText(child, text, depth + 1)) return true
         }
+
         return false
     }
 
+
     // Versão otimizada com limite de profundidade
     private fun containsText(node: AccessibilityNodeInfo?, text: String, depth: Int = 0): Boolean {
-        if (node == null || depth > 80) return false // Proteção contra estouro de pilha
+        if (node == null) return false
 
         // Checa o nó atual primeiro (fail-fast)
         if (node.text?.toString()?.contains(text, true) == true ||
@@ -249,6 +312,7 @@ class FocusAccessibilityService : AccessibilityService() {
         }
         return false
     }
+
 
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -262,13 +326,67 @@ class FocusAccessibilityService : AccessibilityService() {
             val desc = node.contentDescription?.toString() ?: return
             if (desc.contains("Remover bloco", true)
                 ) { BlockOverlayService.showOverlay(this, pkg)
+                Toast.makeText(this, "systemui detectado!", Toast.LENGTH_SHORT).show()
                 return } }
+
+        if (pkg ==  "com.android.vending") {
+            if (BlockOverlayService.isBlocking) return
+
+            if (BYPASS_PLAY_STORE.any { containsVisibleText(root, it) }) {
+                BlockOverlayService.showOverlay(this, pkg)
+                return
+            }
+        }
+
+        if (pkg == "com.brave.browser") {
+            if (BYPASS_BRAVE.any { containsVisibleText(root, it) }) {
+                BlockOverlayService.showOverlay(this, pkg)
+                return
+            }
+        }
+
+        if (pkg == "org.thunderdog.challegram") {
+            if (containsVisibleText(root, "buscar")) {
+                BlockOverlayService.showOverlay(this, pkg)
+                return
+            }
+        }
+
+
+        if (pkg == "com.twitter.android") {
+            if (BlockOverlayService.isBlocking) return
+            if (
+                event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
+                containsVisibleText(root, "buscar x")
+            ) {
+                BlockOverlayService.showOverlay(this, pkg)
+                return
+            }
+        }
+
+        if (pkg =="com.facebook.katana") {
+
+            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+                if (
+                    containsVisibleText(root, "seus posts curtidos") ||
+                    containsVisibleText(root, "ver tudo") ||
+                    containsVisibleText(root, "shitpost") ||
+                    containsVisibleText(root, "vazado")
+                ) {
+                    BlockOverlayService.showOverlay(this, pkg)
+                    return
+                }
+            }
+
+        }
 
         // 1. Bloqueio por pacote e suspicácia (Otimizado)
         val isSuspicious = pkg.contains("virtual") || pkg.contains("cloner") ||
-                pkg.contains("sandbox") || pkg.contains("emulator")
+                pkg.contains("sandbox") || pkg.contains("emulator")||
+                pkg.contains("rotation") || pkg.contains("dpi")|| pkg.contains("notification")
 
         if (BLOCKED_PACKAGES.contains(pkg) || isSuspicious) {
+            if (BlockOverlayService.isBlocking) return
             BlockOverlayService.showOverlay(this, pkg)
             return
         }
@@ -284,7 +402,9 @@ class FocusAccessibilityService : AccessibilityService() {
 
         // 4. Global Keywords (Usando constante estática)
         if (BYPASS_KEYWORDS.any { containsText(root, it) }) {
+            if (BlockOverlayService.isBlocking) return
             BlockOverlayService.showOverlay(this, pkg)
+            Toast.makeText(this, "global detectado!", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -321,46 +441,6 @@ class FocusAccessibilityService : AccessibilityService() {
                 }
                 BlockOverlayService.showOverlay(this, pkg)
                 return
-            }
-        }
-
-        // 6. Bloqueios específicos por App (Play Store, Brave, etc)
-        when (pkg) {
-            "com.android.vending" -> {
-                if (BYPASS_PLAY_STORE.any { containsVisibleText(root, it) }) {
-                    BlockOverlayService.showOverlay(this, pkg)
-                }
-            }
-
-            "com.brave.browser" -> {
-                if (BYPASS_BRAVE.any { containsVisibleText(root, it) }) {
-                    BlockOverlayService.showOverlay(this, pkg)
-                }
-            }
-
-            "org.thunderdog.challegram" -> {
-                if (containsVisibleText(root, "buscar")) {
-                    BlockOverlayService.showOverlay(this, pkg)
-                }
-            }
-
-            "com.twitter.android" -> {
-                if (containsVisibleText(root, "buscar x")) {
-                    BlockOverlayService.showOverlay(this, pkg)
-                }
-            }
-
-            "com.facebook.katana" -> {
-                if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                    if (
-                        containsVisibleText(root, "seus posts curtidos") ||
-                        containsVisibleText(root, "ver tudo") ||
-                        containsVisibleText(root, "shitpost") ||
-                        containsVisibleText(root, "vazado")
-                    ) {
-                        BlockOverlayService.showOverlay(this, pkg)
-                    }
-                }
             }
         }
 

@@ -6,12 +6,10 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
-import android.graphics.Rect
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
@@ -76,63 +74,52 @@ class BlockOverlayService : Service() {
         }
 
         fun showOverlay(context: Context, pkg: String) {
+            if (isBlocking) return // trava dura, imediata
+
+            isBlocking = true // 🔒 TRAVA AQUI, NÃO NO HANDLER
+
             val now = System.currentTimeMillis()
-            val a11y = FocusAccessibilityService.instance
-
-            // 1. SE JÁ ESTÁ BLOQUEANDO: Apenas renovamos a agressividade
-            if (isBlocking && overlayView != null) {
-                // Se o sensor detectar a aba proibida de novo, mandamos outro Back (respeitando o limite de 300ms)
-                if (now - lastBackSentTime > BACK_REPETITION_DELAY) {
-                    lastBackSentTime = now
-                    a11y?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
-                }
-                return
-            }
-
-            // 2. INÍCIO DO BLOQUEIO
-            isBlocking = true
             lastBackSentTime = now
+            val a11y = FocusAccessibilityService.instance
             val ctx = instance ?: context
             val wm = ctx.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
-            mainHandler.post {
+            mainHandler.postAtFrontOfQueue { // ⚡ PRIORIDADE
                 try {
-                    // Limpa qualquer overlay residual antes de inflar o novo
                     if (overlayView == null) {
-                        val view = LayoutInflater.from(ctx).inflate(R.layout.overlay_block, null)
-                        overlayView = view
-                        wm.addView(view, getOverlayParams())
+                        overlayView = LayoutInflater.from(ctx)
+                            .inflate(R.layout.overlay_block, null)
+                        wm.addView(overlayView, getOverlayParams())
+
                     }
 
-                    // Reinicia os timers: se o usuário "voltar" pra aba proibida,
-                    // o ciclo de 2.2s recomeça do zero.
-                    mainHandler.removeCallbacksAndMessages(null)
-
-                    // Sequência de expulsão (3 Backs)
                     a11y?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+
 
                     mainHandler.postDelayed({
                         a11y?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+
                     }, BACK_2_DELAY)
 
                     mainHandler.postDelayed({
                         a11y?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+
                     }, BACK_3_DELAY)
 
-                    // Liberação final após o tempo de segurança
                     mainHandler.postDelayed({
                         removeOverlayOnly()
-                        isBlocking = false
+                        isBlocking = false // 🔓 só aqui libera
+
                     }, RELEASE_DELAY)
 
                 } catch (e: Exception) {
-                    Log.e("HZN", "Falha ao aplicar overlay: ${e.message}")
                     isBlocking = false
                 }
             }
         }
 
         private fun removeOverlayOnly() {
+
             mainHandler.post {
                 try {
                     val ctx = instance ?: overlayView?.context ?: return@post
@@ -142,6 +129,7 @@ class BlockOverlayService : Service() {
                             wm.removeViewImmediate(it)
                         }
                     }
+
                 } catch (e: Exception) {
                     Log.e("HZN", "Erro ao remover view: ${e.message}")
                 } finally {

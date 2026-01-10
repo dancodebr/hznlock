@@ -139,9 +139,14 @@ class FocusAccessibilityService : AccessibilityService() {
         )
 
 
-        private val BYPASS_PLAY_STORE = hashSetOf("vpn", "dns changer","notification","dpi","rotation","rotação","tela","dns","proxy","túnel","virtual","private","privado","anonymous","anonimo","clone","parallel","multiple", "browser","navegador","web","explorer")
-        private val BYPASS_KEYWORDS = hashSetOf("clone app", "clonador","android virtual", "multi account","parallel space", "dual space", "apk editor", "mt manager","tunnel","vmos", "vpn bypass","t.me","nextdns","intra","warp", "cloudflare","como burlar", "proxydroid", "lucky patcher", "hack app", "privacy", "onlyfans","vazadinho","abrir configurações de vpn", "falha na desinstalação de hznlock.")
-        private val BYPASS_BRAVE = hashSetOf("notification","dns changer","navegador","dpi","rotation","rotação","tela", "browser","explorer", "clone","virtual", "dns", "cloudflare", "vpn", "dual","internet app", "internet apk","anonymous","anonimo")
+        private val BYPASS_PLAY_STORE = hashSetOf("vpn", "dns changer","notification","dpi","rotation","rotação","tela","dns","proxy","túnel","virtual","private","privado",
+            "anonymous","anonimo","clone","parallel","multiple", "browser","navegador","web","explorer")
+        private val BYPASS_KEYWORDS = hashSetOf("clone app", "android virtual", "multi account","parallel space", "dual space", "apk editor",
+            "mt manager","vmos", "vpn bypass","t.me","nextdns","warp", "cloudflare", "proxydroid", "lucky patcher", "hack app",
+            "onlyfans","vazadinho","abrir configurações de vpn", "falha na desinstalação de hznlock.")
+        private val BYPASS_BRAVE = hashSetOf("dns changer","navegador","dpi","rotation","rotação","browser","explorer", "dns",
+            "cloudflare", "vpn", "dual","internet app", "internet apk")
+
     }
 
     private lateinit var wm: WindowManager
@@ -329,6 +334,8 @@ class FocusAccessibilityService : AccessibilityService() {
                 Toast.makeText(this, "systemui detectado!", Toast.LENGTH_SHORT).show()
                 return } }
 
+
+
         if (pkg ==  "com.android.vending") {
             if (BlockOverlayService.isBlocking) return
 
@@ -402,6 +409,11 @@ class FocusAccessibilityService : AccessibilityService() {
 
         // 4. Global Keywords (Usando constante estática)
         if (BYPASS_KEYWORDS.any { containsText(root, it) }) {
+            if (pkg == "com.brave.browser") {
+                if (containsVisibleText(root, "gov.br")) {
+                    return
+                }
+            }
             if (BlockOverlayService.isBlocking) return
             BlockOverlayService.showOverlay(this, pkg)
             Toast.makeText(this, "global detectado!", Toast.LENGTH_SHORT).show()

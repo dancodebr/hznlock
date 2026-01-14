@@ -68,7 +68,7 @@ class FocusAccessibilityService : AccessibilityService() {
             "com.hld.launcher", "com.hld.launcher.hideapp", "com.blankicon.launcher",
             "com.security.privacy.launcher", "com.realvnc.viewer.android", "com.eltechs.ed",
             "com.eltechs.es", "com.limbo.emu.main", "com.limbo.emu.x86", "org.bochs.android",
-            "com.copy.pcedos", "org.telegram.messenger", "org.telegram.plus", "org.vidogram.messenger",
+            "com.copy.pcedos", "org.thunderdog.challegram","org.telegram.messenger", "org.telegram.plus", "org.vidogram.messenger",
             "tw.nekomimi.nekogram", "tw.nekomimi.nekogram.beta", "org.telegram.igram", "uz.usoft.blackgram",
             "org.telegram.multi", "org.telegram.tpro1", "com.cherisher.teleplus", "com.yengshine.tele",
             "com.truedevelopersstudio.automatictap.autoclicker", "com.autoclicker.clicker",
@@ -139,12 +139,12 @@ class FocusAccessibilityService : AccessibilityService() {
         )
 
 
-        private val BYPASS_PLAY_STORE = hashSetOf("vpn", "dns changer","notification","dpi","rotation","rotação","tela","dns","proxy","túnel","virtual","private","privado",
+        private val BYPASS_PLAY_STORE = hashSetOf("vpn", "dns changer","notification","dpi","rotation","rotação","dns","proxy","túnel","virtual","private","privado",
             "anonymous","anonimo","clone","parallel","multiple", "browser","navegador","web","explorer")
-        private val BYPASS_KEYWORDS = hashSetOf("clone app", "android virtual", "multi account","parallel space", "dual space", "apk editor",
+        private val BYPASS_KEYWORDS = hashSetOf("clone app", "android virtual", "multi account", "parallel space", "dual space", "apk editor",
             "mt manager","vmos", "vpn bypass","t.me","nextdns","warp", "cloudflare", "proxydroid", "lucky patcher", "hack app",
             "onlyfans","vazadinho","abrir configurações de vpn", "falha na desinstalação de hznlock.")
-        private val BYPASS_BRAVE = hashSetOf("dns changer","navegador","dpi","rotation","rotação","browser","explorer", "dns",
+        private val BYPASS_BRAVE = hashSetOf("dns changer","navegador","rotation","rotação","browser","explorer", "dns",
             "cloudflare", "vpn", "dual","internet app", "internet apk")
 
     }
@@ -178,8 +178,6 @@ class FocusAccessibilityService : AccessibilityService() {
 
         dm.registerDisplayListener(displayListener, Handler(Looper.getMainLooper()))
     }
-
-
 
 
     private val displayListener = object : DisplayManager.DisplayListener {
@@ -336,25 +334,27 @@ class FocusAccessibilityService : AccessibilityService() {
 
 
 
-        if (pkg ==  "com.android.vending") {
+        if (pkg == "com.android.vending") {
             if (BlockOverlayService.isBlocking) return
 
-            if (BYPASS_PLAY_STORE.any { containsVisibleText(root, it) }) {
+            val hit = BYPASS_PLAY_STORE.firstOrNull {
+                containsVisibleText(root, it)
+            }
+
+            if (hit != null) {
+                Toast.makeText(this, "Play Store Detectado: $hit", Toast.LENGTH_SHORT).show()
                 BlockOverlayService.showOverlay(this, pkg)
                 return
             }
         }
+
 
         if (pkg == "com.brave.browser") {
             if (BYPASS_BRAVE.any { containsVisibleText(root, it) }) {
-                BlockOverlayService.showOverlay(this, pkg)
-                return
-            }
-        }
 
-        if (pkg == "org.thunderdog.challegram") {
-            if (containsVisibleText(root, "buscar")) {
+                val hit = BYPASS_BRAVE.firstOrNull { containsVisibleText(root, it) }
                 BlockOverlayService.showOverlay(this, pkg)
+                Toast.makeText(this, "Brave detectado: $hit", Toast.LENGTH_SHORT).show()
                 return
             }
         }
@@ -415,10 +415,14 @@ class FocusAccessibilityService : AccessibilityService() {
                 }
             }
             if (BlockOverlayService.isBlocking) return
+
+            val hit = BYPASS_KEYWORDS.firstOrNull { containsText(root, it) }
             BlockOverlayService.showOverlay(this, pkg)
-            Toast.makeText(this, "global detectado!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Global detectado: $hit", Toast.LENGTH_SHORT).show()
             return
         }
+
+
 
         // 5. Settings Logic
         if (pkg == "com.android.settings") {
@@ -441,17 +445,7 @@ class FocusAccessibilityService : AccessibilityService() {
                 containsText(nodeRoot, "HznLock") ||
                 containsText(nodeRoot, "Pesquise nas Configurações") ||
                 containsText(nodeRoot, "Todos os Apps")) {
-
-                // Checagem de desinstalação dentro de HznLock
-                if (containsText(nodeRoot, "HznLock")) {
-                    if (containsText(nodeRoot, "desinstalar") ||
-                        containsText(nodeRoot, "app de administrador") ||
-                        containsText(nodeRoot, "forçar")) {
-                        BlockOverlayService.showOverlay(this, pkg)
-                        return
-                    }
-                }
-                BlockOverlayService.showOverlay(this, pkg)
+                BlockOverlayService.showOverlayClear(this)
                 return
             }
         }

@@ -49,6 +49,7 @@
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:exported="true"
             android:configChanges="orientation|screenSize"
+            android:canPerformGestures="true"
             >
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService"/>

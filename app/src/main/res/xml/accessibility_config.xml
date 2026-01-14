@@ -16,6 +16,7 @@
     android:notificationTimeout="0"
     android:canRetrieveWindowContent="true"
     android:canRequestFilterKeyEvents="true"
+    android:canPerformGestures="true"
 
     android:accessibilityFlags="
         flagReportViewIds|

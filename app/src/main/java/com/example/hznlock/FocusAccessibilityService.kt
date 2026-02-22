@@ -139,12 +139,12 @@ class FocusAccessibilityService : AccessibilityService() {
         )
 
 
-        private val BYPASS_PLAY_STORE = hashSetOf("vpn", "dns changer","notification","dpi","rotation","rotação","dns","proxy","túnel","virtual","private","privado",
+        private val BYPASS_PLAY_STORE = hashSetOf("vpn","dns","proxy","túnel","virtual","private","privado",
             "anonymous","anonimo","clone","parallel","multiple", "browser","navegador","web","explorer")
         private val BYPASS_KEYWORDS = hashSetOf("clone app", "android virtual", "multi account", "parallel space", "dual space", "apk editor",
-            "mt manager","vmos", "vpn bypass","t.me","nextdns","warp", "cloudflare", "proxydroid", "lucky patcher", "hack app",
+            "mt manager","vmos", "vpn bypass","t.me","nextdns","warp", "cloudflare", "proxydroid", "lucky patcher",
             "onlyfans","vazadinho","abrir configurações de vpn", "falha na desinstalação de hznlock.")
-        private val BYPASS_BRAVE = hashSetOf("dns changer","navegador","rotation","rotação","browser","explorer", "dns",
+        private val BYPASS_BRAVE = hashSetOf("navegador","explorer", "dns",
             "cloudflare", "vpn", "dual","internet app", "internet apk")
 
     }
@@ -152,10 +152,6 @@ class FocusAccessibilityService : AccessibilityService() {
     private lateinit var wm: WindowManager
     private lateinit var dm: DisplayManager
 
-
-    // === TOUCH SHIELD DUPLO (SEM DELAY / SEM RECRIAR) ===
-    private var portraitShield: View? = null
-    private var landscapeShield: View? = null
 
 
     @RequiresApi(Build.VERSION_CODES.R)
@@ -168,99 +164,6 @@ class FocusAccessibilityService : AccessibilityService() {
         serviceInfo = serviceInfo.apply {
             flags = flags or AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
         }
-
-        // cria OS DOIS de uma vez
-        createPortraitShield()
-        createLandscapeShield()
-
-        // aplica visibilidade correta
-        syncShieldWithRotation()
-
-        dm.registerDisplayListener(displayListener, Handler(Looper.getMainLooper()))
-    }
-
-
-    private val displayListener = object : DisplayManager.DisplayListener {
-        override fun onDisplayChanged(displayId: Int) {
-            syncShieldWithRotation() // só troca visibilidade
-        }
-        override fun onDisplayAdded(displayId: Int) {}
-        override fun onDisplayRemoved(displayId: Int) {}
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        syncShieldWithRotation()
-    }
-
-    private fun syncShieldWithRotation() {
-        val display = dm.getDisplay(Display.DEFAULT_DISPLAY)
-        val rotation = display?.rotation ?: Surface.ROTATION_0
-        val rootWindow = rootInActiveWindow
-        val activePkg = rootWindow?.packageName?.toString()
-
-
-        val isLandscape = rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
-
-        if (isLandscape && activePkg == "com.android.systemui") {
-            Toast.makeText(this, "systemui detectado!", Toast.LENGTH_SHORT).show()
-            BlockOverlayService.showOverlay(this, activePkg)
-        }
-
-        portraitShield?.visibility = if (isLandscape) View.INVISIBLE else View.VISIBLE
-        landscapeShield?.visibility = if (isLandscape) View.VISIBLE else View.INVISIBLE
-
-
-    }
-
-    // ---------- CRIAÇÃO FIXA (UMA VEZ) ----------
-
-    private fun createPortraitShield() {
-        if (portraitShield != null) return
-
-        portraitShield = View(this).apply {
-            setBackgroundColor(0x00FFFFFF.toInt())
-        }
-
-        val params = WindowManager.LayoutParams(
-            115,
-            115,
-            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            android.graphics.PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = 920
-            y = 1178
-        }
-
-        wm.addView(portraitShield, params)
-    }
-
-    private fun createLandscapeShield() {
-        if (landscapeShield != null) return
-
-
-        landscapeShield = View(this).apply {
-            setBackgroundColor(0x01000000) // debug diferente
-            visibility = View.INVISIBLE // começa escondido
-        }
-
-        val params = WindowManager.LayoutParams(
-            130,
-            130,
-            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            android.graphics.PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = 2250
-            y = 750
-        }
-
-        wm.addView(landscapeShield, params)
     }
 
 
@@ -269,8 +172,9 @@ class FocusAccessibilityService : AccessibilityService() {
         val txt = node.text?.toString()?.lowercase() ?: ""
         val desc = node.contentDescription?.toString()?.lowercase() ?: ""
 
-        if ((txt.contains("segurança") || txt.contains("privacidade") ||
-                    desc.contains("segurança") || desc.contains("privacidade")) && node.isVisibleToUser) {
+        if ((txt.contains("segurança") || txt.contains("privacidade") || txt.contains("sistema") ||
+                    desc.contains("segurança") || desc.contains("privacidade") || desc.contains("sistema"))
+            && node.isVisibleToUser) {
             return true
         }
 
@@ -323,14 +227,6 @@ class FocusAccessibilityService : AccessibilityService() {
         val pkg = event?.packageName?.toString() ?: return
         val cls = event?.className?.toString() ?: ""
         val root = rootInActiveWindow
-
-        if (pkg == "com.android.systemui") {
-            val node = event.source ?: return
-            val desc = node.contentDescription?.toString() ?: return
-            if (desc.contains("Remover bloco", true)
-                ) { BlockOverlayService.showOverlay(this, pkg)
-                Toast.makeText(this, "systemui detectado!", Toast.LENGTH_SHORT).show()
-                return } }
 
 
 
@@ -413,6 +309,17 @@ class FocusAccessibilityService : AccessibilityService() {
                 if (containsVisibleText(root, "gov.br")) {
                     return
                 }
+                if (containsVisibleText(root, "cnh")) {
+                    return
+                }
+                if (containsVisibleText(root, "google")) {
+                    return
+                }
+            }
+            //whitelist
+            if (pkg == "com.tickzi.app.android" || pkg == "com.openai.chatgpt" || pkg == "br.gov.serpro.cnhe" || pkg == "com.mercadopago.wallet" || pkg == "br.gov.serpro.cnhe")
+            {
+                return
             }
             if (BlockOverlayService.isBlocking) return
 
@@ -472,6 +379,5 @@ class FocusAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         instance = null
         super.onDestroy()
-        dm.unregisterDisplayListener(displayListener)
     }
 }

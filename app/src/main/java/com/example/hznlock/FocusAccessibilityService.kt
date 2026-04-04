@@ -6,18 +6,9 @@ import android.annotation.SuppressLint
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.content.Context
-import android.content.res.Configuration
-import android.os.Looper
-import android.graphics.Rect
 import android.hardware.display.DisplayManager
 import android.os.Build
-import android.view.Surface
 import android.view.WindowManager
-import android.os.Handler
-import android.util.Log
-import android.view.Display
-import android.view.Gravity
-import android.view.View
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 
@@ -139,13 +130,15 @@ class FocusAccessibilityService : AccessibilityService() {
         )
 
 
-        private val BYPASS_PLAY_STORE = hashSetOf("vpn","dns","proxy","túnel","virtual","private","privado",
-            "anonymous","anonimo","clone","parallel","multiple", "browser","navegador","web","explorer")
-        private val BYPASS_KEYWORDS = hashSetOf("clone app", "android virtual", "multi account", "parallel space", "dual space", "apk editor",
-            "mt manager","vmos", "vpn bypass","t.me","nextdns","warp", "cloudflare", "proxydroid", "lucky patcher",
-            "onlyfans","vazadinho","abrir configurações de vpn", "falha na desinstalação de hznlock.")
-        private val BYPASS_BRAVE = hashSetOf("navegador","explorer", "dns",
-            "cloudflare", "vpn", "dual","internet app", "internet apk")
+        private val BYPASS_PLAY_STORE = hashSetOf("vpn","dns","virtual",
+            "clone", "browser","navegador")
+        private val BYPASS_KEYWORDS = hashSetOf("android virtual", "multi account", "parallel space", "dual space", "apk editor",
+            "mt manager","vmos","t.me","nextdns", "cloudflare", "ncacontexto", "proxydroid", "lucky patcher",
+            "onlyfans","vazadinho", "caiu na net","abrir configurações de vpn")
+        private val BYPASS_BRAVE = hashSetOf(
+            "vpn grátis", "apk dns", "vpn download", "download vpn", "dns apk",
+        "vpn apk", "apk vpn", "vpn baixar", "baixar vpn", "dns baixar", "baixar dns", "baixar navegador",
+            )
 
     }
 
@@ -283,10 +276,14 @@ class FocusAccessibilityService : AccessibilityService() {
 
         }
 
-        // 1. Bloqueio por pacote e suspicácia (Otimizado)
-        val isSuspicious = pkg.contains("virtual") || pkg.contains("cloner") ||
-                pkg.contains("sandbox") || pkg.contains("emulator")||
-                pkg.contains("rotation") || pkg.contains("dpi")|| pkg.contains("notification")
+        val suspiciousKeywords = hashSetOf(
+            "vpn","v2ray","openvpn","wireguard","proxy","tunnel",
+            "dns","resolver","adblock","filter","intra",
+            "webview","chrome","firefox","opera","duck","edge", "virtual", "clone"
+        )
+
+        val isSuspicious = suspiciousKeywords.any { pkg.contains(it) }
+
 
         if (BLOCKED_PACKAGES.contains(pkg) || isSuspicious) {
             if (BlockOverlayService.isBlocking) return
@@ -340,6 +337,11 @@ class FocusAccessibilityService : AccessibilityService() {
                         containsText(nodeRoot, "sobre o dispositivo") ||
                         containsText(nodeRoot, "Ponto de acesso Wi-Fi") ||
                         containsText(nodeRoot, "*campo obrigatório") ||
+                        containsText(nodeRoot, "para acessar a rede wi-fi") ||
+                        containsText(nodeRoot, "parear novo disposotivo") ||
+                        containsText(nodeRoot, "visível como") ||
+                        containsText(nodeRoot, "RS30") ||
+                        containsText(nodeRoot, "toque em uma rede para se conectar") ||
                         containsText(nodeRoot, "Usar Wi-Fi")
 
                 if (!allowed) {

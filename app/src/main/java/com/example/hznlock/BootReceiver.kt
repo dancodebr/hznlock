@@ -3,7 +3,6 @@ package com.example.hznlock
 import android.annotation.SuppressLint
 import android.app.admin.DevicePolicyManager
 import android.content.BroadcastReceiver
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -19,18 +18,24 @@ class BootReceiver : BroadcastReceiver() {
             val vpnIntent = Intent(context, LocalVpnService::class.java).apply {
                 action = LocalVpnService.ACTION_START
             }
+
             context.startForegroundService(vpnIntent)
 
             val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
-            val admin = ComponentName(context, AdminReceiver::class.java)
 
-            dpm.addUserRestriction(admin, "no_config_settings")
+            val handler = android.os.Handler(Looper.getMainLooper())
+            val end = System.currentTimeMillis() + 60_000
 
-            android.os.Handler(Looper.getMainLooper()).postDelayed({
+            val task = object : Runnable {
+                override fun run() {
+                    if (System.currentTimeMillis() < end) {
+                        dpm.lockNow() // fecha a tela
+                        handler.postDelayed(this, 1000) // 1.5s (ajusta 1–2s)
+                    }
+                }
+            }
 
-                dpm.clearUserRestriction(admin, "no_config_settings")
-
-            }, 60_000)
+            handler.post(task)
 
         }
 

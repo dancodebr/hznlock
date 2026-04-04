@@ -131,12 +131,13 @@ class FocusAccessibilityService : AccessibilityService() {
 
 
         private val BYPASS_PLAY_STORE = hashSetOf("vpn","dns","virtual",
-            "clone", "browser","navegador")
+            "clone", "browser")
         private val BYPASS_KEYWORDS = hashSetOf("android virtual", "multi account", "parallel space", "dual space", "apk editor",
             "mt manager","vmos","t.me","nextdns", "cloudflare", "ncacontexto", "proxydroid", "lucky patcher",
             "onlyfans","vazadinho", "caiu na net","abrir configurações de vpn")
         private val BYPASS_BRAVE = hashSetOf(
-            "vpn grátis", "apk dns", "vpn download", "download vpn", "dns apk",
+            "vpn grátis", "apk dns", "vpn download", "download vpn", "dns apk", "vpn free", "vpn android",
+            "vpn for android", "vpn dns","vpn internet gratis", "proton vpn",
         "vpn apk", "apk vpn", "vpn baixar", "baixar vpn", "dns baixar", "baixar dns", "baixar navegador",
             )
 
@@ -157,24 +158,6 @@ class FocusAccessibilityService : AccessibilityService() {
         serviceInfo = serviceInfo.apply {
             flags = flags or AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
         }
-    }
-
-
-    private fun isDangerVisible(node: AccessibilityNodeInfo?): Boolean {
-        if (node == null) return false
-        val txt = node.text?.toString()?.lowercase() ?: ""
-        val desc = node.contentDescription?.toString()?.lowercase() ?: ""
-
-        if ((txt.contains("segurança") || txt.contains("privacidade") || txt.contains("sistema") ||
-                    desc.contains("segurança") || desc.contains("privacidade") || desc.contains("sistema"))
-            && node.isVisibleToUser) {
-            return true
-        }
-
-        for (i in 0 until node.childCount) {
-            if (isDangerVisible(node.getChild(i))) return true
-        }
-        return false
     }
 
     fun containsVisibleText(root: AccessibilityNodeInfo?, text: String, depth: Int = 0): Boolean {
@@ -314,7 +297,8 @@ class FocusAccessibilityService : AccessibilityService() {
                 }
             }
             //whitelist
-            if (pkg == "com.tickzi.app.android" || pkg == "com.openai.chatgpt" || pkg == "br.gov.serpro.cnhe" || pkg == "com.mercadopago.wallet" || pkg == "br.gov.serpro.cnhe")
+            if (pkg == "com.tickzi.app.android" || pkg == "com.openai.chatgpt" || pkg == "br.gov.serpro.cnhe" ||
+                pkg == "com.mercadopago.wallet" || pkg == "br.gov.serpro.cnhe")
             {
                 return
             }
@@ -335,12 +319,14 @@ class FocusAccessibilityService : AccessibilityService() {
             if (cls.contains("SubSettings", true)) {
                 val allowed = containsText(nodeRoot, "Tela") ||
                         containsText(nodeRoot, "sobre o dispositivo") ||
+                        containsText(nodeRoot, "connected devices") ||
                         containsText(nodeRoot, "Ponto de acesso Wi-Fi") ||
                         containsText(nodeRoot, "*campo obrigatório") ||
                         containsText(nodeRoot, "para acessar a rede wi-fi") ||
-                        containsText(nodeRoot, "parear novo disposotivo") ||
+                        containsText(nodeRoot, "parear novo dispositivo") ||
                         containsText(nodeRoot, "visível como") ||
                         containsText(nodeRoot, "RS30") ||
+                        containsText(nodeRoot, "rs30") ||
                         containsText(nodeRoot, "toque em uma rede para se conectar") ||
                         containsText(nodeRoot, "Usar Wi-Fi")
 
@@ -350,8 +336,7 @@ class FocusAccessibilityService : AccessibilityService() {
                 }
             }
 
-            if (isDangerVisible(nodeRoot) ||
-                containsText(nodeRoot, "HznLock") ||
+            if (containsText(nodeRoot, "HznLock") ||
                 containsText(nodeRoot, "Pesquise nas Configurações") ||
                 containsText(nodeRoot, "Todos os Apps")) {
                 BlockOverlayService.showOverlayClear(this)

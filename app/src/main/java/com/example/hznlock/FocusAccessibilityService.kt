@@ -151,6 +151,7 @@ class FocusAccessibilityService : AccessibilityService() {
     @RequiresApi(Build.VERSION_CODES.R)
     @SuppressLint("ServiceCast")
     override fun onServiceConnected() {
+        super.onServiceConnected()
         instance = this
         wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         dm = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
@@ -311,7 +312,6 @@ class FocusAccessibilityService : AccessibilityService() {
         }
 
 
-
         // 5. Settings Logic
         if (pkg == "com.android.settings") {
             val nodeRoot = root ?: return
@@ -340,6 +340,11 @@ class FocusAccessibilityService : AccessibilityService() {
                 containsText(nodeRoot, "Pesquise nas Configurações") ||
                 containsText(nodeRoot, "Todos os Apps")) {
                 BlockOverlayService.showOverlayClear(this)
+                return
+            }
+
+            if (containsVisibleText(root, "about phone") ||
+                containsVisibleText(root, "sobre o dispositivo") ) {
                 return
             }
         }

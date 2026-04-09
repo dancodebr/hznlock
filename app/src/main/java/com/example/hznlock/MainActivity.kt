@@ -29,6 +29,7 @@ import androidx.core.content.ContextCompat
 import com.example.hznlock.ui.theme.HznLockTheme
 import kotlinx.coroutines.delay
 
+
 // --- FUNÇÕES UTILITÁRIAS ---
 
 fun isAccessibilityEnabled(context: Context): Boolean {
@@ -168,10 +169,45 @@ fun CyberMinimalUI(
     // ESTADO PARA SUMIR O BOTÃO
     val showVpnButton = remember { mutableStateOf(true) }
 
+    val lastA11yState = remember { mutableStateOf<Boolean?>(null) }
+
     LaunchedEffect(Unit) {
         while (true) {
             overlayEnabled.value = Settings.canDrawOverlays(ctx)
             a11yEnabled.value = isAccessibilityEnabled(ctx)
+
+            if (lastA11yState.value != a11yEnabled.value) {
+
+                val dpm = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+                val admin = ComponentName(ctx, AdminReceiver::class.java)
+
+                val targetPkgs = arrayOf(
+                    "com.android.chrome",
+                    "com.android.vending",
+                    "cm.aptoide.pt",
+                    "cm.aptoide.lite ",
+                    "com.brave.browser",
+                    "org.telegram.messenger",
+                    "org.thunderdog.challegram"
+                )
+
+                try {
+                    for (pkg in targetPkgs) {
+                        if (!a11yEnabled.value) {
+                            dpm.setApplicationHidden(admin, pkg, true)  // esconder
+                        } else {
+                            dpm.setApplicationHidden(admin, pkg, false) // mostrar
+                        }
+                    }
+
+                } catch (e: Exception) {
+                    Log.e("HznLock", "Erro: ${e.message}")
+                }
+
+                // atualiza estado anterior
+                lastA11yState.value = a11yEnabled.value
+            }
+
             adminEnabled.value = isDeviceAdminEnabled(ctx)
 
             val pm = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager

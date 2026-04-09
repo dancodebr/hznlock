@@ -1,10 +1,14 @@
 package com.example.hznlock
 
 import android.app.*
+import android.app.admin.DevicePolicyManager
 import android.content.Context
 import android.content.Intent
 import android.net.VpnService
+import android.content.ComponentName
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -15,7 +19,11 @@ class LocalVpnService : VpnService() {
     private var vpnInterface: ParcelFileDescriptor? = null
     private val TAG = "HznLockVPN"
 
-    // Função utilitária estática para checar se a interface está UP
+    // --- ADIÇÃO: Variáveis para o loop de bloqueio ---
+    private val handler = Handler(Looper.getMainLooper())
+    private var lockRunnable: Runnable? = null
+    // ------------------------------------------------
+
     companion object {
         const val ACTION_START = "START_VPN"
         const val ACTION_STOP = "STOP_VPN"
@@ -35,11 +43,14 @@ class LocalVpnService : VpnService() {
         startForegroundServiceNotification()
 
         when (intent?.action) {
-            ACTION_START -> startVpn()
+            ACTION_START -> {
+                startVpn()
+            }
             ACTION_STOP -> stopVpn()
         }
         return START_STICKY
     }
+
 
     private fun startVpn() {
         Log.i(TAG, "Iniciando VPN de DNS...")
@@ -48,24 +59,13 @@ class LocalVpnService : VpnService() {
             val builder = Builder()
             builder.setSession("HznLock DNS")
 
-            // 1. IPs da Cloudflare Family (Filtro de conteúdo adulto/malware)
             builder.addDnsServer("1.1.1.3")
             builder.addDnsServer("1.0.0.3")
             builder.addDnsServer("2606:4700:4700::1113")
             builder.addDnsServer("2606:4700:4700::1003")
 
-            // 2. IP privado para a interface
             builder.addAddress("10.0.0.2", 32)
 
-            // --- O SEGREDO ESTÁ AQUI ---
-            // Remova o addRoute("0.0.0.0", 0) que bloqueia a internet.
-            // Em vez disso, vamos permitir que todos os apps ignorem a VPN para DADOS,
-            // mas o Android ainda forçará o DNS que definimos acima.
-
-            // Se você quer apenas filtrar DNS, não adicione rotas de IP.
-            // O Android usará os DNS Servers definidos acima automaticamente.
-
-            // Opcional: Impedir que a VPN capture o tráfego de apps de banco
             builder.addDisallowedApplication("com.mercadopago.wallet")
             builder.addDisallowedApplication("com.twitter.android")
 
@@ -78,8 +78,13 @@ class LocalVpnService : VpnService() {
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao estabelecer VPN: ${e.message}")
         }
+
     }
+
     private fun stopVpn() {
+        // --- ADIÇÃO: Cancela o loop se o serviço for parado ---
+        lockRunnable?.let { handler.removeCallbacks(it) }
+
         try {
             vpnInterface?.close()
             vpnInterface = null

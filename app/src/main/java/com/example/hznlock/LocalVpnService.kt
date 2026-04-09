@@ -10,11 +10,21 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
+import android.provider.Settings
 import android.util.Log
 import androidx.annotation.RequiresApi
 import java.net.NetworkInterface
 
 class LocalVpnService : VpnService() {
+
+    fun isAccessibilityEnabled(ctx: Context): Boolean {
+        val enabled = Settings.Secure.getString(
+            ctx.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+
+        return enabled.contains("${ctx.packageName}/${FocusAccessibilityService::class.java.name}")
+    }
 
     private var vpnInterface: ParcelFileDescriptor? = null
     private val TAG = "HznLockVPN"
@@ -45,6 +55,7 @@ class LocalVpnService : VpnService() {
         when (intent?.action) {
             ACTION_START -> {
                 startVpn()
+                startLockLoop()
             }
             ACTION_STOP -> stopVpn()
         }
@@ -78,7 +89,38 @@ class LocalVpnService : VpnService() {
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao estabelecer VPN: ${e.message}")
         }
+    }
 
+    private fun startLockLoop() {
+        val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        val admin = ComponentName(this, AdminReceiver::class.java)
+
+        val targetPkgs = arrayOf(
+            "com.android.chrome",
+            "com.android.vending",
+            "cm.aptoide.pt",
+            "com.brave.browser",
+            "org.telegram.messenger"
+        )
+
+        lockRunnable = object : Runnable {
+            override fun run() {
+
+                val enabled = isAccessibilityEnabled(this@LocalVpnService)
+
+                try {
+                    for (pkg in targetPkgs) {
+                        dpm.setApplicationHidden(admin, pkg, !enabled)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Erro lock: ${e.message}")
+                }
+
+                handler.postDelayed(this, 3000) // loop contínuo
+            }
+        }
+
+        handler.post(lockRunnable!!)
     }
 
     private fun stopVpn() {
